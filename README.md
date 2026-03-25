@@ -1,12 +1,10 @@
 # Agentic Skills
 
----
-
 A collection of personal agentic skills that were written to solve specific needs.
 
 ---
 
-## Dev Journal
+### Dev Journal
 
 Maintains a per-project engineering journal (journal.md) plus a structured decision log and full conversation transcripts.
 
@@ -14,10 +12,17 @@ Maintains a per-project engineering journal (journal.md) plus a structured decis
 npx skills@latest add lmcjt37/skills/dev-journal
 ```
 
-## Dev Plan
+### Dev Plan
 
 Maintains a per-project engineering plan (plan.md) plus a structured decision log.
 
 ```
 npx skills@latest add lmcjt37/skills/dev-plan
 ```
+
+---
+
+## References
+
+- [https://skills.sh/](https://skills.sh/)
+- [https://github.com/vercel-labs/skills](https://github.com/vercel-labs/skills)
