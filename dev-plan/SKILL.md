@@ -70,11 +70,13 @@ Create a practical plan broken into small deliverable chunks:
 - Each section should have a main bullet point (checkbox) with consecutive numbering for marking off later.
 - Each section should also have 1-4 sub-bullets (checkbox) for key notes, dependencies, and risks.
 - Sections should support smooth handoff between sessions.
+- refer to guidelines.md for more detailed instructions on how to structure the plan sections and sub-bullets.
 
 **B) Decision records**
 Create a DR when:
 - Commitment language appears ("we'll do X", "let's skip Y", "reprioritise Z"), OR
 - A plan choice is expensive to reverse (architecture, data model, rollout approach, integration strategy).
+- refer to guidelines.md for more detailed instructions on how to structure the plan sections and sub-bullets.
 
 **C) Reprioritisation updates**
 When the user asks to adjust scope/order:
