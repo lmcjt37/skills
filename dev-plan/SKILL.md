@@ -19,7 +19,7 @@ The plan lives **per-project**, at the **closest git repo root**, and should kee
 ## When to run
 
 Run this skill when:
-- The user uses a slash command: `/plan <JIRA-REFERENCE>`
+- The user uses a slash command: `/dev-plan <JIRA-REFERENCE>`
 - The user says: **"plan my ticket <JIRA-REFERENCE>"** or **"help plan my ticket <JIRA-REFERENCE>"**
 - The user asks to reprioritize, skip, or refine parts of an existing plan
 - You detect a **high-signal planning decision** (scope, order, architecture, or approach commitments)
@@ -68,7 +68,7 @@ From the proposal and current codebase context, extract:
 Create a practical plan broken into small deliverable chunks:
 - One section per meaningful implementation checkpoint.
 - Each section should have a main bullet point (checkbox) with consecutive numbering for marking off later.
-- Each section should also have 1-4 sub-bullets (checkboxes) for key notes, dependencies, and risks.
+- Each section should also have 1-4 sub-bullets (checkbox) for key notes, dependencies, and risks.
 - Sections should support smooth handoff between sessions.
 
 **B) Decision records**

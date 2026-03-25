@@ -16,6 +16,13 @@ Style:
 - Succinct but clear detail
 - Human readable
 
+Template for each section:
+- x [ ] **Impl X - Section title**: 1–2 sentence description of the implementation step.
+    - x.1 [ ] Key note, dependency, or risk #1
+    - x.2 [ ] Key note, dependency, or risk #2
+    - x.3 [ ] Key note, dependency, or risk #3
+    - DR references: DR-XXX
+
 ## 2) Decision Record format (plan/<branch>/decisions.md) (create if missing)
 
 Each decision uses this template:

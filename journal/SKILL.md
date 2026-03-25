@@ -1,9 +1,9 @@
 ---
-name: dev-journal
+name: journal
 description: Maintains a per-project engineering journal (journal.md) plus a structured decision log and full conversation transcripts.
 ---
 
-# Dev Journal
+# Journal
 
 ## Overview
 
@@ -58,13 +58,16 @@ From the current conversation and recent work context, extract:
 
 **A) Decisions**
 Create a DR when:
-- Commitment language appears (“we’ll do X”, “let’s go with Y because…”, “let’s skip Z because…”), OR
+- Commitment language appears (“we’ll do X”, “let’s go with Y because…”, “let’s skip Z because…”)
 - Something is implemented that’s costly to revert (schema choice, architecture split, data model, CI approach, etc.)
+- DR's aren't necessarily one per decision — if multiple related decisions are made in a session, they can be grouped into a single DR with sub-points.
+- DR's don't need to be created after every implementation detail — focus on the high-signal decisions that shape the project.
 
 **B) Observations**
 Create an OB when:
 - The human observes something about the implementation (comparisons, metrics, improvements, regressions, etc.), OR
 - Slash command: `/observation <command>`
+- These are reserved for human observations to keep them separate from agent-recorded decisions.
 
 **C) Transcript**
 Store the full conversation, but if a tool output is huge, compress it into:
