@@ -50,6 +50,17 @@ npx skills@latest add lmcjt37/skills/revert
 *Slash commands*
 - `/revert <pull request link>`
 
+## Map Architecture 🗺️
+
+Maps a project or domain by tracing screens, interfaces, functions, callsites, branches, and data flow into Mermaid-based architecture notes.
+
+```
+npx skills@latest add lmcjt37/skills/map-architecture
+```
+
+*Slash commands*
+- `/map-architecture <domain>`
+
 ---
 
 ## References
