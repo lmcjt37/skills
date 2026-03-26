@@ -1,5 +1,5 @@
 ---
-name: analyse-architecture
+name: map-architecture
 description: Maps a project or domain by tracing screens, interfaces, functions, callsites, branches, and data flow into Mermaid-based architecture notes. Use when the user asks for architecture analysis, domain mapping, dependency tracing, touchpoint discovery, or wants diagrams written under architecture/.
 ---
 
@@ -11,7 +11,7 @@ Capture the result as durable Markdown and Mermaid diagrams under the closest gi
 ## When to run
 
 Run this skill when:
-- The user asks to analyse a domain, feature, module, flow, or screen architecture
+- The user asks to map a domain, feature, module, flow, or screen architecture
 - The user wants interfaces, functions, callsites, branches, or dependencies traced
 - The user asks for Mermaid diagrams or architecture docs to be created
 - The user asks for a high-level overview plus deeper drill-down diagrams
