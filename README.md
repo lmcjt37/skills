@@ -6,7 +6,7 @@ Home to my personal collection of agentic skills that were written to solve spec
 
 ## Journal 📝
 
-Maintains a per-project engineering journal (journal.md) plus a structured decision log and full conversation transcripts.
+Maintains a per-project engineering journal (journal.md) plus structured decision, observation, and session records.
 
 ```
 npx skills@latest add lmcjt37/skills/journal
