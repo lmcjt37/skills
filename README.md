@@ -18,14 +18,14 @@ npx skills@latest add lmcjt37/skills/journal
 
 ## Dev Plan 🛫
 
-Maintains a per-project engineering plan (plan.md) plus a structured decision log.
+Maintains a per-project engineering plan (plan.md) plus a structured decision log for tickets, docs, or local tasks.
 
 ```
 npx skills@latest add lmcjt37/skills/dev-plan
 ```
 
 *Slash commands*
-- `/dev-plan <JIRA link>`
+- `/dev-plan <task reference>`
 - `/dev-plan`
 
 ## Summarise 🎬

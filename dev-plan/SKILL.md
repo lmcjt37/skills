@@ -1,6 +1,6 @@
 ---
 name: dev-plan
-description: Maintains a per-project engineering plan (plan.md) plus a structured decision log.
+description: Maintains a per-project engineering plan (plan.md) plus a structured decision log, adapting to tickets, docs, or local tasks across different agents and IDEs.
 ---
 
 # Dev Plan
@@ -10,28 +10,26 @@ description: Maintains a per-project engineering plan (plan.md) plus a structure
 You are the project's *Architect*.
 
 Your job: maintain a clear implementation plan in `plan.md` and capture important choices in `decisions.md`.
-The plan lives **per-project**, at the **closest git repo root**, and should keep ticket work structured across sessions.
-
-## Prerequisites
-
-- Atlassian MCP -> Required for extracting context.
+The plan lives **per-project**, at the **closest git repo root**, and should keep work structured across sessions for both humans and agents.
 
 ## When to run
 
 Run this skill when:
-- The user uses a slash command: `/dev-plan <JIRA-REFERENCE>`
-- The user says: **"plan my ticket <JIRA-REFERENCE>"** or **"help plan my ticket <JIRA-REFERENCE>"**
+- The user uses a slash command such as `/dev-plan <task reference>`
+- The user says: **"plan my ticket <reference>"**, **"help plan this task"**, or **"make a plan"**
 - The user asks to reprioritize, skip, or refine parts of an existing plan
 - You detect a **high-signal planning decision** (scope, order, architecture, or approach commitments)
 
 ## Golden rules
 
 1. **Never write outside the repo root.** Determine the closest git root before writing anything.
-2. **Keep `plan.md` concise and actionable.** Use bullet points for implementation sections and sub-bullets for context.
+2. **Keep `plan.md` concise and actionable.** Optimize for fast human scanability and clean agent handoff.
 3. **Plan in checkpoint-sized chunks.** Each chunk should be small enough to implement and commit safely.
 4. **Decisions must be explicit.** Record the decision, rationale, alternatives, tradeoffs, and consequences.
 5. **Stay adaptable.** If the user asks to skip or reprioritize, update the plan instead of restarting from scratch.
-6. **Use Atlassian MCP for ticket context** when available; if unavailable, notify the user that they should connect it.
+6. **Prefer the best available context source.** Use the user prompt, linked ticket/doc, repo docs, codebase context, and optional integrations in that order.
+7. **Separate facts from assumptions.** If context is incomplete, write assumptions explicitly instead of presenting guesses as settled facts.
+8. **Only ask questions when the answers would materially change the plan.** Otherwise proceed and record open questions.
 
 ## Files you manage (all at repo root)
 
@@ -43,9 +41,9 @@ Run this skill when:
 ### Step 1 — Find repo root + identity
 
 - Repo root: `git rev-parse --show-toplevel`
-- Branch: `git rev-parse --abbrev-ref HEAD` (sanitize `/` to `-`)
-- Ticket reference: parse from user input (`<JIRA-REFERENCE>`) when provided
-- Agent name: detect from system; if unavailable use `[AGENT]`
+- Branch: `git rev-parse --abbrev-ref HEAD` (sanitize `/` to `-`; if detached or unavailable, use `detached-head`)
+- Task reference: parse from user input, linked issue, document, or branch name when provided
+- Agent name: optional metadata; detect from system when easy, otherwise omit it
 
 ### Step 2 — Ensure structure exists
 
@@ -53,45 +51,50 @@ If missing, create:
 - `plan/<branch>/plan.md`
 - `plan/<branch>/decisions.md`
 
-### Step 3 — Plan proposal
+### Step 3 — Gather context
 
-- Analyse the context of the ticket (prefer Atlassian MCP) (description, acceptance criteria, technical considerations, test considerations, etc).
-- Ask any necessary questions needed for extra context or clarity ("Are there similar patterns to follow?", "What about accessibility?", "Are there designs we can link to?", etc).
-- Propose a high level breakdown of the implementation steps you think we should take, where appropriate also state which steps can be worked on in parallel.
-- **Important**, ask for permission to proceed in planning and writing the implementation steps.
+- Gather the best available context from the prompt, issue tracker, design docs, repo docs, and codebase.
+- Extract the goal, constraints, acceptance criteria, relevant existing patterns, risks, and verification expectations.
+- If the context source is unavailable, continue with what you have and note the missing source in the plan or response.
 
-### Step 4 — Build the planning payload
+### Step 4 — Decide whether to ask questions
 
-From the proposal and current codebase context, extract:
+- If missing information would materially change scope, sequencing, or architecture, ask focused questions before writing or heavily revising the plan.
+- If the gaps are non-blocking, proceed and record them under `Assumptions` or `Open Questions`.
+- Do not ask for permission to do the planning work. Provide a concrete proposal the human can react to.
+
+### Step 5 — Build the planning payload
+
+From the available context, extract:
 
 **A) Implementation sections**
 Create a practical plan broken into small deliverable chunks:
-- One section per meaningful implementation checkpoint.
-- Each section should have a main bullet point (checkbox) with consecutive numbering for marking off later.
-- Each section should also have 1-4 sub-bullets (checkbox) for key notes, dependencies, and risks.
-- Sections should support smooth handoff between sessions.
-- refer to guidelines.md for more detailed instructions on how to structure the plan sections and sub-bullets.
+- Use 3-6 meaningful checkpoints by default; fewer for small tasks, more only when the work clearly warrants it.
+- Use a single checkbox per checkpoint with optional supporting sub-bullets for dependencies, risks, or notes.
+- Prefer simple sequencing over forced nesting. Only call out parallel work when it is genuinely safe and useful.
+- Ensure the plan supports smooth handoff between sessions and between human and agent collaborators.
+- Read `references/guidelines.md` for the required plan structure and templates.
 
 **B) Decision records**
 Create a DR when:
 - Commitment language appears ("we'll do X", "let's skip Y", "reprioritise Z"), OR
 - A plan choice is expensive to reverse (architecture, data model, rollout approach, integration strategy).
-- refer to guidelines.md for more detailed instructions on how to structure the plan sections and sub-bullets.
+- Read `references/guidelines.md` for the DR template and numbering rules.
 
 **C) Reprioritisation updates**
 When the user asks to adjust scope/order:
-- **Always** verify the decision before implementation.
+- Verify the requested change if it is ambiguous or risky.
 - Preserve existing useful plan content.
 - Reorder, split, or remove bullet points as requested.
 - Add/update DR entries when rationale materially changes.
 
-### Step 5 — Write updates
+### Step 6 — Write updates
 
 Write/update files in this order:
 1) `plan/<branch>/plan.md`
 2) `plan/<branch>/decisions.md`
 
-### Step 6 — Confirm succinctly
+### Step 7 — Confirm succinctly
 
 Return a short summary of what you wrote:
 - Artifacts modified with paths.

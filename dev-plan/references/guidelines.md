@@ -1,54 +1,101 @@
 # Agent Dev Plan — Reference
 
-## 1) Required plan.md outline (create if missing)
+## 1) Required `plan.md` outline
 
-plan.md MUST contain these sections:
+`plan.md` should stay short, skimmable, and useful to both humans and agents.
 
-1. JIRA reference.
-2. Context for the feature. If none, ask for it.
-3. Implementation steps broken down into consecutive bullet points (checkboxes).
-4. Each bullet (checkbox) should have 1-4 sub-bullets of additional context.
-5. There should always be a bullet point (checkbox) to verify changes (no regressions, profile, tests pass).
-6. List any DR-XXX references in a comma separated list at the bottom of the relevant implementation section.
-7. At the bottom of the plan there should always be a final checkbox to re-audit for improvements.
+Include these sections when creating or substantially rewriting the plan:
 
-Style:
-- Succinct but clear detail
-- Human readable
+1. `Task`
+2. `Context`
+3. `Assumptions` (omit if none)
+4. `Open Questions` (omit if none)
+5. `Plan`
+6. `Verification`
+7. `Decisions` (omit if no DRs are relevant yet)
 
-Use this explicit template for each implementation section:
-- [ ] **Impl X - Section title**: 1–2 sentence description of the implementation step.
-    - x.1 [ ] Key note, dependency, or risk #1
-    - x.2 [ ] Key note, dependency, or risk #2
-    - x.3 [ ] Key note, dependency, or risk #3
-    - DR references: DR-XXX
+Guidance:
+- Use a task reference, not a tracker-specific label. Examples: Jira ticket, Linear issue, GitHub issue, design doc, or local task name.
+- Keep facts in `Context`, guesses in `Assumptions`, and unresolved items in `Open Questions`.
+- Use 3-6 plan checkpoints by default.
+- Sub-bullets are optional. Add them only when they carry real value such as dependencies, risks, or notes.
+- Always include at least one verification step.
+- Keep the plan human-readable. Avoid filler items added only to satisfy structure.
 
-## 2) Decision Record format (plan/<branch>/decisions.md) (create if missing)
+Recommended template:
 
-Each decision explicitly uses this template:
+```md
+# Task Plan
+
+## Task
+- Reference: <task reference or local description>
+- Goal: <what success looks like>
+
+## Context
+- <facts from prompt, docs, codebase, issue tracker>
+
+## Assumptions
+- <non-blocking assumptions>
+
+## Open Questions
+- <open items that could still change the plan>
+
+## Plan
+- [ ] 1. <checkpoint title>
+  - Notes / risks / dependencies: <optional>
+- [ ] 2. <checkpoint title>
+- [ ] 3. <checkpoint title>
+
+## Verification
+- [ ] Validate behavior against acceptance criteria
+- [ ] Run or describe relevant tests / checks
+
+## Decisions
+- DR-001, DR-002
+```
+
+## 2) Decision Record format (`plan/<branch>/decisions.md`)
+
+Each decision should use this template:
 
 ## DR-### — <Decision Title>
 - Date: YYYY-MM-DD
 - Branch: <branch>
+- Status: proposed | accepted | superseded
 - Context: what problem were we solving?
 - Decision: what did we choose?
-- Why: constraints + reasoning
-- Alternatives considered: A/B/C + why not
+- Why: constraints and reasoning
+- Alternatives considered: options and why not
 - Tradeoffs: gains vs costs
-- Metrics: Any measurements given (omit key if none)
-- Consequences: what this enables / complicates
-- Links: PR/issue/commit if available
+- Metrics: measurements given, if any
+- Consequences: what this enables or complicates
+- Links: PR/issue/doc/commit if available
 
 Numbering:
-- Use the next integer based on the last DR-### in the file.
+- Use the next integer based on the last `DR-###` in the file.
 
-## 3) Other triggers
+When to create a DR:
+- A decision is costly to reverse.
+- Scope or sequencing meaningfully changes.
+- The human explicitly chooses between multiple viable approaches.
 
-This skill is designed to be invoked by a wrapper command like:
-- "plan my ticket `<JIRA-REFERENCE>`"
-- "Can you help plan my ticket `<JIRA-REFERENCE>`"
+## 3) Agent behavior rules
 
-OR
+When planning:
+- Proceed without asking permission to write the plan.
+- Ask questions only when missing answers would materially change scope, ordering, or architecture.
+- If the plan can still be useful without those answers, write it and place the uncertainty under `Assumptions` or `Open Questions`.
+- Prefer concrete checkpoints over abstract categories.
+- Call out parallel work only when it is genuinely independent.
 
-Invoked with slash commands like:
-- `/plan <JIRA-REFERENCE>`
+## 4) Trigger examples
+
+This skill may be invoked by prompts such as:
+- "plan my ticket `<reference>`"
+- "help plan this task"
+- "make a plan for this issue"
+- "reprioritize the current plan"
+
+It may also be invoked with slash commands such as:
+- `/dev-plan <reference>`
+- `/dev-plan`
