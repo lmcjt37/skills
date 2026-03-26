@@ -39,6 +39,17 @@ npx skills@latest add lmcjt37/skills/summarise
 *Slash commands*
 - `/summarise`
 
+## Revert 🔄
+
+Revert a previously merged pull request by creating a fresh branch from the target base branch.
+
+```
+npx skills@latest add lmcjt37/skills/revert
+```
+
+*Slash commands*
+- `/revert <pull request link>`
+
 ---
 
 ## References
