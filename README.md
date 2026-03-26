@@ -1,6 +1,6 @@
 # Agentic Skills 🦾
 
-A collection of personal agentic skills that were written to solve specific needs.
+Home to my personal collection of agentic skills that were written to solve specific needs.
 
 ---
 
