@@ -26,12 +26,16 @@ Run this skill when:
 6. Prefer evidence over interpretation. Mark inferred relationships explicitly.
 7. Create an `overview` artifact whenever the codebase has multiple screens, routes, or top-level flows.
 8. Diagrams support concise written findings; they are not the whole output.
+9. Default to behavioral depth, not just structural breadth. A useful map explains what happens during lifecycle, success, failure, and state transitions.
+10. Treat screens and flows as first-class units. For UI areas, map what the user sees, what triggers work, what functions run, and what state is rendered.
 
 ## Output structure
 
 Write to:
 - `architecture/overview.md`
 - `architecture/<domain>/README.md`
+- `architecture/<domain>/screens/<screen>.md`
+- `architecture/<domain>/flows/<flow>.md`
 - `architecture/<domain>/*.md`
 - `architecture/cosmograph/points.json`
 - `architecture/cosmograph/links.json`
@@ -41,6 +45,7 @@ Write to:
 - `architecture/cosmograph/config.indexed.json`
 
 Use a stable filesystem-safe domain name such as `home`, `auth`, or `settings`.
+Use stable filesystem-safe screen and flow names such as `checkout-summary`, `profile-edit`, or `pull-to-refresh`.
 
 ## Workflow
 
@@ -82,6 +87,20 @@ Trace the domain through the codebase. Include, where relevant:
 - Network requests, persistence, caching, and background work
 - Cross-domain dependencies and shared abstractions
 
+For each major screen, flow, or entry point, also extract:
+- Lifecycle triggers such as initial load, appear/mount, focus, refresh, retry, submit, background resume, and teardown
+- The ordered function or method chain invoked by each trigger
+- Success paths, failure paths, empty states, loading states, and disabled states
+- State producers and consumers: view model state, store slices, derived values, selectors, bindings, and props
+- Error handling behavior: where errors are caught, transformed, ignored, surfaced to UI, retried, or logged
+- Helpers, utilities, formatters, adapters, and mappers used by the area, plus what each helper is responsible for
+- Tight coupling points: files that change together, files that know too much about each other, and cross-layer shortcuts
+- Architectural patterns in use, such as MVVM, Redux-style store, coordinator, service layer, repository, observer, dependency injection, or ad hoc patterns
+- Reasonable inferred intent behind conditional logic or structure, for example performance tradeoffs, backward compatibility, staged rollout, defensive validation, or UI consistency
+
+Do not stop at naming components. Follow execution.
+If a screen or flow exists, identify what the user action or lifecycle event is, what code path it enters, what state changes occur, and what UI can be emitted as a result.
+
 Use fast code search first, then open only the files needed to verify relationships.
 When sub-agents are used, consolidate their findings into one verified model before diagramming. Resolve overlaps and contradictions explicitly rather than copying notes through unchanged.
 
@@ -95,19 +114,103 @@ Organise findings into the smallest useful set of diagrams, for example:
 - External integration map
 
 Combine diagrams when domains overlap heavily. Split diagrams when a single graph becomes hard to read.
+For non-trivial domains, split the written analysis into focused screen-level and flow-level artifacts instead of collapsing everything into one long README.
 
 ### Step 5 - Write the domain docs
 
 For each domain, create `architecture/<domain>/README.md` with:
 - Scope
 - Entry points
+- Screen map
+- Flow map
+- Inferred architecture patterns
 - Core components
-- Key flows
-- Conditionals and branching behaviour
+- Coupling and change-risk hotspots
 - External dependencies
+- Links to screen and flow deep dives
 - Open questions or inferred edges
 
 Add Mermaid diagrams in the same file or adjacent Markdown files when separate diagrams are clearer.
+Prefer multiple focused files over one shallow summary.
+
+For non-trivial domains, also create:
+- `architecture/<domain>/screens/<screen>.md` for each important screen, route, or view container
+- `architecture/<domain>/flows/<flow>.md` for each important lifecycle, user journey, async process, submission path, sync path, or error-recovery path
+
+Use the domain README as the index and synthesis layer, not the place to dump every detail.
+
+Use this structure by default for non-trivial domains:
+
+```md
+# <Domain>
+## Scope
+## Entry Points
+## Screen Map
+## Flow Map
+## Architecture Pattern
+## Lifecycle Flows
+## Coupling
+## External Dependencies
+## Screen Deep Dives
+## Flow Deep Dives
+## Open Questions
+```
+
+Within those sections:
+- Name concrete files and symbols, not just layers
+- Show ordered call sequences where possible
+- Separate observed facts from inferred intent
+- Call out missing or inconsistent state handling if discovered
+- When a view state or error path is implied but not directly rendered in code, mark it as inferred
+
+Use this structure by default for `screens/<screen>.md`:
+
+```md
+# <Screen>
+## Purpose
+## Entry Conditions
+## Rendered States
+## Lifecycle Triggers
+## Function Call Chains
+## State Sources and Sinks
+## Success and Error Handling
+## Helpers
+## Coupled Files
+## Conditionals and Inferred Decisions
+## Open Questions
+```
+
+Use this structure by default for `flows/<flow>.md`:
+
+```md
+# <Flow>
+## Purpose
+## Start Trigger
+## Participating Files
+## Ordered Execution Path
+## State Transitions
+## Success Outcome
+## Error Outcome
+## Retry or Recovery Behavior
+## Helpers and Shared Logic
+## Coupling and Risk
+## Inferred Design Rationale
+## Open Questions
+```
+
+Screen docs should answer:
+- What the user sees
+- What starts work
+- Which functions run in order
+- Which states can render
+- How success, empty, loading, and error outcomes differ
+
+Flow docs should answer:
+- What kicks the flow off
+- Which files and symbols participate
+- How data and control move step by step
+- Where branching, retries, or failure handling happen
+- Why the implementation may have been structured this way
 
 ### Step 6 - Write the overview
 
@@ -223,3 +326,8 @@ Return:
 - Keep node labels short and descriptive.
 - Prefer a few connected diagrams over one unreadable graph.
 - If a relationship is inferred rather than directly observed, label it as inferred in the Markdown near the diagram.
+- For UI domains, prefer at least these diagrams when evidence supports them:
+  - Screen navigation or route map
+  - Lifecycle sequence from user or framework trigger to rendered state
+  - State transition or decision flow for loading, success, empty, and error outcomes
+  - Dependency or coupling graph for the files that jointly implement the area
