@@ -33,6 +33,12 @@ Write to:
 - `architecture/overview.md`
 - `architecture/<domain>/README.md`
 - `architecture/<domain>/*.md`
+- `architecture/cosmograph/points.json`
+- `architecture/cosmograph/links.json`
+- `architecture/cosmograph/config.json`
+- `architecture/cosmograph/points.indexed.json`
+- `architecture/cosmograph/links.indexed.json`
+- `architecture/cosmograph/config.indexed.json`
 
 Use a stable filesystem-safe domain name such as `home`, `auth`, or `settings`.
 
@@ -108,7 +114,102 @@ Add Mermaid diagrams in the same file or adjacent Markdown files when separate d
 Create `architecture/overview.md` when the project has more than one screen, route, or domain of interest.
 Show how major screens or flows tie together and reference deeper docs such as `architecture/<domain>/README.md`.
 
-### Step 7 - Confirm succinctly
+### Step 7 - Generate Cosmograph exports for full-codebase overviews
+
+When you map the whole codebase, also generate exportable graph data for Cosmograph in `architecture/cosmograph/`.
+Do this for full-codebase overviews, not for every small single-domain mapping unless the user asks for it.
+Generate both export modes unless the user explicitly asks for only one:
+- Raw JSON plus Data Kit mapping config
+- Fully indexed v2-ready JSON plus direct render config
+
+Write:
+- `architecture/cosmograph/points.json`
+- `architecture/cosmograph/links.json`
+- `architecture/cosmograph/config.json`
+- `architecture/cosmograph/points.indexed.json`
+- `architecture/cosmograph/links.indexed.json`
+- `architecture/cosmograph/config.indexed.json`
+
+Use Cosmograph-compatible raw JSON tables:
+- The official docs say `points` and `links` can be provided as `Record<string, unknown>[]`, including JSON arrays of objects.
+- The minimal config should map `pointIdBy` for points plus `linkSourceBy` and `linkTargetsBy` for links.
+- The v2 migration docs say direct rendering requires `pointIndexBy` on points and `linkSourceIndexBy` plus `linkTargetIndexBy` on links.
+
+Default file contents:
+
+`points.json`
+- JSON array of point objects
+- Each point must include `id`
+- Prefer also including `label`, `kind`, `domain`, `path`, and `notes` when available
+
+`links.json`
+- JSON array of link objects
+- Each link must include `source` and `target`
+- Prefer also including `relationship`, `label`, `inferred`, and `evidence`
+
+`config.json`
+- JSON object shaped for Cosmograph data preparation
+- Use:
+```json
+{
+  "points": {
+    "pointIdBy": "id"
+  },
+  "links": {
+    "linkSourceBy": "source",
+    "linkTargetsBy": ["target"]
+  }
+}
+```
+
+`points.indexed.json`
+- JSON array of point objects for direct Cosmograph v2 rendering
+- Each point must include:
+  - `id`
+  - `index`
+- `index` must be a unique zero-based ordinal integer aligned with the full points array
+- Prefer also including `label`, `kind`, `domain`, `path`, and `notes`
+
+`links.indexed.json`
+- JSON array of link objects for direct Cosmograph v2 rendering
+- Each link must include:
+  - `source`
+  - `target`
+  - `sourceIndex`
+  - `targetIndex`
+- `sourceIndex` and `targetIndex` must match the `index` values of the referenced points
+- Cosmograph v2 expects single source-target pairs, so flatten any multi-target relationship into separate link rows
+- Prefer also including `relationship`, `label`, `inferred`, and `evidence`
+
+`config.indexed.json`
+- JSON object for direct Cosmograph rendering against indexed JSON
+- Use:
+```json
+{
+  "pointIdBy": "id",
+  "pointIndexBy": "index",
+  "linkSourceBy": "source",
+  "linkSourceIndexBy": "sourceIndex",
+  "linkTargetBy": "target",
+  "linkTargetIndexBy": "targetIndex"
+}
+```
+
+Model the codebase as a readable architecture graph:
+- Points should represent stable architectural entities such as apps, packages, domains, routes, screens, modules, services, stores, APIs, databases, queues, or external systems.
+- Links should represent concrete relationships such as owns, calls, depends_on, reads, writes, emits, subscribes_to, navigates_to, or implements.
+- Prefer fewer high-signal points over a noisy file-by-file dump unless the user explicitly wants file-level granularity.
+- Keep ids stable and filesystem-safe where possible.
+- Mark uncertain relationships with `inferred: true` and include short evidence or rationale.
+
+The goal is not just validity but reuse:
+- The JSON should be directly reusable later in a Cosmograph workflow.
+- Keep the schema consistent within one export.
+- Ensure every `source` and `target` refers to an existing point `id`.
+- Ensure every `sourceIndex` and `targetIndex` refers to an existing point `index`.
+- Keep the raw and indexed exports semantically aligned so they describe the same graph at different preparation levels.
+
+### Step 8 - Confirm succinctly
 
 Return:
 - Domains analysed
