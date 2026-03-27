@@ -43,6 +43,8 @@ Write to:
 - `architecture/cosmograph/points.indexed.json`
 - `architecture/cosmograph/links.indexed.json`
 - `architecture/cosmograph/config.indexed.json`
+- `architecture/cosmograph/layout.json`
+- `architecture/cosmograph/config.layout.json`
 
 Use a stable filesystem-safe domain name such as `home`, `auth`, or `settings`.
 Use stable filesystem-safe screen and flow names such as `checkout-summary`, `profile-edit`, or `pull-to-refresh`.
@@ -232,6 +234,8 @@ Write:
 - `architecture/cosmograph/points.indexed.json`
 - `architecture/cosmograph/links.indexed.json`
 - `architecture/cosmograph/config.indexed.json`
+- `architecture/cosmograph/layout.json`
+- `architecture/cosmograph/config.layout.json`
 
 Use Cosmograph-compatible raw JSON tables:
 - The official docs say `points` and `links` can be provided as `Record<string, unknown>[]`, including JSON arrays of objects.
@@ -243,12 +247,12 @@ Default file contents:
 `points.json`
 - JSON array of point objects
 - Each point must include `id`
-- Prefer also including `label`, `kind`, `domain`, `path`, and `notes` when available
+- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, and `layer` when available
 
 `links.json`
 - JSON array of link objects
 - Each link must include `source` and `target`
-- Prefer also including `relationship`, `label`, `inferred`, and `evidence`
+- Prefer also including `relationship`, `label`, `inferred`, `evidence`, and `flow` when available
 
 `config.json`
 - JSON object shaped for Cosmograph data preparation
@@ -271,7 +275,7 @@ Default file contents:
   - `id`
   - `index`
 - `index` must be a unique zero-based ordinal integer aligned with the full points array
-- Prefer also including `label`, `kind`, `domain`, `path`, and `notes`
+- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, and `layer`
 
 `links.indexed.json`
 - JSON array of link objects for direct Cosmograph v2 rendering
@@ -282,7 +286,7 @@ Default file contents:
   - `targetIndex`
 - `sourceIndex` and `targetIndex` must match the `index` values of the referenced points
 - Cosmograph v2 expects single source-target pairs, so flatten any multi-target relationship into separate link rows
-- Prefer also including `relationship`, `label`, `inferred`, and `evidence`
+- Prefer also including `relationship`, `label`, `inferred`, `evidence`, and `flow`
 
 `config.indexed.json`
 - JSON object for direct Cosmograph rendering against indexed JSON
@@ -298,12 +302,114 @@ Default file contents:
 }
 ```
 
-Model the codebase as a readable architecture graph:
-- Points should represent stable architectural entities such as apps, packages, domains, routes, screens, modules, services, stores, APIs, databases, queues, or external systems.
-- Links should represent concrete relationships such as owns, calls, depends_on, reads, writes, emits, subscribes_to, navigates_to, or implements.
+`layout.json`
+- JSON object containing deterministic cluster placement metadata
+- Use `clusterPositionsMap` keyed by major domain cluster id
+- Use stable coordinates so major domains keep the same relative placement across runs when the same codebase shape is mapped
+- Prefer a readable spread such as left-to-right lanes, grid sectors, or hub-and-spoke placement depending on the repo shape
+- Include optional notes about the placement strategy when useful
+
+Example:
+```json
+{
+  "clusterPositionsMap": {
+    "auth": [-1200, 200],
+    "home": [-200, 200],
+    "payments": [900, -100],
+    "settings": [900, 700]
+  },
+  "strategy": "major-domains-grid"
+}
+```
+
+`config.layout.json`
+- JSON object for reusable Cosmograph layout and simulation tuning
+- Use deterministic major-domain clustering plus lighter intra-domain separation
+- Include:
+  - `pointClusterBy`: the point column representing the major domain, usually `domain`
+  - `clusterPositionsMap`: copied from `layout.json`
+  - `simulationClusterStrength`: enough to preserve deterministic domain grouping without overcompressing points
+  - `simulationRepulsion`: increased moderately to separate points within each domain cluster
+  - `simulationLinkDistance`: increased moderately so local flow/state/helper nodes are not packed too tightly
+- Optionally include `pointClusterStrengthBy` if the graph intentionally varies pull strength by point type or importance
+
+Example:
+```json
+{
+  "pointClusterBy": "domain",
+  "clusterPositionsMap": {
+    "auth": [-1200, 200],
+    "home": [-200, 200],
+    "payments": [900, -100],
+    "settings": [900, 700]
+  },
+  "simulationClusterStrength": 0.65,
+  "simulationRepulsion": 0.25,
+  "simulationLinkDistance": 3
+}
+```
+
+Model the codebase as a readable architecture graph with enough depth to reflect the screen and flow analysis:
+- Points should represent the important architectural and behavioral entities in the map, not just top-level modules.
+- Include points where relevant for:
+  - apps, packages, domains, routes, screens, and view containers
+  - flows and lifecycle triggers
+  - rendered states such as loading, success, empty, disabled, and error
+  - modules, services, stores, controllers, repositories, APIs, databases, queues, and external systems
+  - helpers, mappers, adapters, formatters, validators, and error handlers
+- Use `kind` to distinguish point types such as `domain`, `screen`, `flow`, `trigger`, `state`, `service`, `store`, `helper`, `api`, `database`, `external`, or `error_handler`.
+- Use `layer` when useful to distinguish UI, orchestration, domain, data, platform, or external concerns.
 - Prefer fewer high-signal points over a noisy file-by-file dump unless the user explicitly wants file-level granularity.
-- Keep ids stable and filesystem-safe where possible.
-- Mark uncertain relationships with `inferred: true` and include short evidence or rationale.
+
+Links should represent concrete structural and behavioral relationships such as:
+- `owns`
+- `contains`
+- `navigates_to`
+- `triggers`
+- `calls`
+- `depends_on`
+- `reads`
+- `writes`
+- `emits`
+- `subscribes_to`
+- `renders`
+- `transitions_to`
+- `handles_error_with`
+- `uses_helper`
+- `guards`
+- `retries`
+- `implements`
+- `coupled_to`
+
+When deeper mapping is available:
+- Represent major screens as points.
+- Represent important flows as points.
+- Represent major rendered states as points when they clarify behavior.
+- Represent helpers and error-handling components as points when they materially shape control flow.
+- Add links that show which trigger starts a flow, which flow calls which functions or services, which states can be rendered, where errors move, and which files or components are tightly coupled.
+- Use `flow` on links when a relationship belongs to a named lifecycle or user journey.
+- Use `notes` on points for concise inferred rationale or implementation context when it helps future reuse.
+
+Cosmograph exports should stay aligned with the deeper docs:
+- If `screens/<screen>.md` exists, the graph should usually include a corresponding `screen` point.
+- If `flows/<flow>.md` exists, the graph should usually include a corresponding `flow` point.
+- If the docs identify distinct loading, success, empty, or error states, include corresponding `state` points when they materially help the graph explain behavior.
+- If coupling or helper usage is called out in the docs, encode the important relationships in the graph instead of leaving them only in prose.
+- Major domains should usually be clusterable by a shared `domain` field so deterministic domain placement is possible.
+
+Do not try to encode every function as a point by default.
+Use flow, state, helper, and coupling nodes selectively so the graph becomes more explanatory, not more cluttered.
+Keep ids stable and filesystem-safe where possible.
+Mark uncertain relationships with `inferred: true` and include short evidence or rationale.
+
+For layout and spacing:
+- Use `pointClusterBy` with the major domain field, usually `domain`, so the graph can cluster by major area.
+- Emit `clusterPositionsMap` so major domains have deterministic positions across runs.
+- Use `simulationRepulsion` and `simulationLinkDistance` to slightly separate nodes within each domain cluster rather than relying only on cluster placement.
+- Keep force tuning moderate. The goal is readable domain interiors, not exploding related nodes so far apart that flows become hard to follow.
+- Prefer consistent placement strategies across iterations of the same repo, for example auth on the left, primary product flows in the center, platform or settings to the right, external systems at the periphery.
+- If some points should stay closer to the cluster center, optionally support `pointClusterStrengthBy` with lower values for peripheral helper or state nodes and higher values for core screen or flow nodes.
+- Do not provide manual coordinates for every point unless the user explicitly asks for a hand-authored layout. Keep determinism at the domain-cluster level and let the simulation handle local arrangement.
 
 The goal is not just validity but reuse:
 - The JSON should be directly reusable later in a Cosmograph workflow.
@@ -311,6 +417,7 @@ The goal is not just validity but reuse:
 - Ensure every `source` and `target` refers to an existing point `id`.
 - Ensure every `sourceIndex` and `targetIndex` refers to an existing point `index`.
 - Keep the raw and indexed exports semantically aligned so they describe the same graph at different preparation levels.
+- Keep `layout.json` and `config.layout.json` aligned with the `domain` values actually present on points.
 
 ### Step 8 - Confirm succinctly
 
