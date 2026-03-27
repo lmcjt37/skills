@@ -37,14 +37,14 @@ Write to:
 - `architecture/<domain>/screens/<screen>.md`
 - `architecture/<domain>/flows/<flow>.md`
 - `architecture/<domain>/*.md`
+- `architecture/cosmograph/config.json`
+- `architecture/cosmograph/layout.json`
 - `architecture/cosmograph/points.json`
 - `architecture/cosmograph/links.json`
-- `architecture/cosmograph/config.json`
-- `architecture/cosmograph/points.indexed.json`
-- `architecture/cosmograph/links.indexed.json`
-- `architecture/cosmograph/config.indexed.json`
-- `architecture/cosmograph/layout.json`
-- `architecture/cosmograph/config.layout.json`
+- `architecture/cosmograph/raw/config.json`
+- `architecture/cosmograph/raw/layout.json`
+- `architecture/cosmograph/raw/points.json`
+- `architecture/cosmograph/raw/links.json`
 
 Use a stable filesystem-safe domain name such as `home`, `auth`, or `settings`.
 Use stable filesystem-safe screen and flow names such as `checkout-summary`, `profile-edit`, or `pull-to-refresh`.
@@ -223,13 +223,15 @@ Show how major screens or flows tie together and reference deeper docs such as `
 
 When you map the whole codebase, also generate exportable graph data for Cosmograph in `architecture/cosmograph/`.
 Do this for full-codebase overviews, not for every small single-domain mapping unless the user asks for it.
-Generate both export modes unless the user explicitly asks for only one:
+Generate both export modes for Cosmograph:
 - Raw JSON plus Data Kit mapping config
 - Fully indexed v2-ready JSON plus direct render config
 
-Use one combined graph dataset for each export mode:
+Use one combined graph dataset per export mode:
 - One `points` dataset
 - One `links` dataset
+- One `config` dataset
+- One `layout` dataset
 - Do not split the graph into separate overview and behavior files
 - Instead, encode both overview structure and deeper behavioral detail inside the same dataset using metadata fields and pruning rules
 
@@ -237,64 +239,43 @@ Write:
 - `architecture/cosmograph/points.json`
 - `architecture/cosmograph/links.json`
 - `architecture/cosmograph/config.json`
-- `architecture/cosmograph/points.indexed.json`
-- `architecture/cosmograph/links.indexed.json`
-- `architecture/cosmograph/config.indexed.json`
 - `architecture/cosmograph/layout.json`
-- `architecture/cosmograph/config.layout.json`
+- `architecture/cosmograph/raw/points.json`
+- `architecture/cosmograph/raw/links.json`
+- `architecture/cosmograph/raw/config.json`
+- `architecture/cosmograph/raw/layout.json`
 
-Use Cosmograph-compatible raw JSON tables:
-- The official docs say `points` and `links` can be provided as `Record<string, unknown>[]`, including JSON arrays of objects.
-- The minimal config should map `pointIdBy` for points plus `linkSourceBy` and `linkTargetsBy` for links.
-- The v2 migration docs say direct rendering requires `pointIndexBy` on points and `linkSourceIndexBy` plus `linkTargetIndexBy` on links.
+Use these directory conventions:
+- `architecture/cosmograph/` contains the fully indexed v2-ready direct-render files
+- `architecture/cosmograph/raw/` contains the raw JSON plus Data Kit mapping files
+
+Use the direct-render indexed format in `architecture/cosmograph/`:
+- Points must include `pointIndexBy`
+- Links must include `linkSourceIndexBy` and `linkTargetIndexBy`
+
+Use raw JSON plus Data Kit mapping in `architecture/cosmograph/raw/`:
+- Points and links are object arrays without required point/link index fields
+- Config maps the source field names for points and links
+- Layout remains required here too so downstream tooling has the same deterministic placement metadata in both directories
 
 Default file contents:
 
 `points.json`
 - JSON array of point objects
 - Each point must include `id`
+- Each point must include `index`
+- `index` must be a unique zero-based ordinal integer aligned with the full points array
 - Prefer also including `label`, `kind`, `domain`, `path`, `notes`, `layer`, `cluster`, `subcluster`, `graphLevel`, `importance`, and `sizeWeight` when available
 
 `links.json`
 - JSON array of link objects
 - Each link must include `source` and `target`
+- Each link must include `sourceIndex` and `targetIndex`
+- `sourceIndex` and `targetIndex` must match the `index` values of the referenced points
+- Cosmograph v2 expects single source-target pairs, so flatten any multi-target relationship into separate link rows
 - Prefer also including `relationship`, `label`, `inferred`, `evidence`, `flow`, `graphLevel`, and `strength` when available
 
 `config.json`
-- JSON object shaped for Cosmograph data preparation
-- Use:
-```json
-{
-  "points": {
-    "pointIdBy": "id"
-  },
-  "links": {
-    "linkSourceBy": "source",
-    "linkTargetsBy": ["target"]
-  }
-}
-```
-
-`points.indexed.json`
-- JSON array of point objects for direct Cosmograph v2 rendering
-- Each point must include:
-  - `id`
-  - `index`
-- `index` must be a unique zero-based ordinal integer aligned with the full points array
-- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, `layer`, `cluster`, `subcluster`, `graphLevel`, `importance`, and `sizeWeight`
-
-`links.indexed.json`
-- JSON array of link objects for direct Cosmograph v2 rendering
-- Each link must include:
-  - `source`
-  - `target`
-  - `sourceIndex`
-  - `targetIndex`
-- `sourceIndex` and `targetIndex` must match the `index` values of the referenced points
-- Cosmograph v2 expects single source-target pairs, so flatten any multi-target relationship into separate link rows
-- Prefer also including `relationship`, `label`, `inferred`, `evidence`, `flow`, `graphLevel`, and `strength`
-
-`config.indexed.json`
 - JSON object for direct Cosmograph rendering against indexed JSON
 - Use:
 ```json
@@ -328,16 +309,14 @@ Example:
 }
 ```
 
-`config.layout.json`
-- JSON object for reusable Cosmograph layout and simulation tuning
-- Use deterministic major-domain clustering plus lighter intra-domain separation
-- Include:
-  - `pointClusterBy`: the point column representing the major domain, usually `domain`
-  - `clusterPositionsMap`: copied from `layout.json`
-  - `simulationClusterStrength`: enough to preserve deterministic domain grouping without overcompressing points
-  - `simulationRepulsion`: increased moderately to separate points within each domain cluster
-  - `simulationLinkDistance`: increased moderately so local flow/state/helper nodes are not packed too tightly
-- Optionally include `pointClusterStrengthBy` if the graph intentionally varies pull strength by point type or importance
+`layout.json` should also carry the reusable layout and simulation tuning for direct rendering.
+Include:
+- `pointClusterBy`: the point column representing the major domain, usually `domain`
+- `clusterPositionsMap`: deterministic major-domain placement
+- `simulationClusterStrength`: enough to preserve deterministic domain grouping without overcompressing points
+- `simulationRepulsion`: increased moderately to separate points within each domain cluster
+- `simulationLinkDistance`: increased moderately so local flow/state/helper nodes are not packed too tightly
+- Optionally `pointClusterStrengthBy` if the graph intentionally varies pull strength by point type or importance
 
 Example:
 ```json
@@ -351,9 +330,43 @@ Example:
   },
   "simulationClusterStrength": 0.65,
   "simulationRepulsion": 0.25,
-  "simulationLinkDistance": 3
+  "simulationLinkDistance": 3,
+  "strategy": "major-domains-grid"
 }
 ```
+
+For `architecture/cosmograph/raw/`:
+
+`raw/points.json`
+- JSON array of point objects
+- Each point must include `id`
+- Do not include `index` unless the user explicitly wants redundant compatibility fields in the raw export
+- Prefer the same semantic metadata as the indexed export where possible: `label`, `kind`, `domain`, `path`, `notes`, `layer`, `cluster`, `subcluster`, `graphLevel`, `importance`, and `sizeWeight`
+
+`raw/links.json`
+- JSON array of link objects
+- Each link must include `source` and `target`
+- Do not include `sourceIndex` or `targetIndex` unless the user explicitly wants redundant compatibility fields in the raw export
+- Prefer the same semantic metadata as the indexed export where possible: `relationship`, `label`, `inferred`, `evidence`, `flow`, `graphLevel`, and `strength`
+
+`raw/config.json`
+- JSON object shaped for Cosmograph Data Kit style field mapping
+- Use:
+```json
+{
+  "points": {
+    "pointIdBy": "id"
+  },
+  "links": {
+    "linkSourceBy": "source",
+    "linkTargetsBy": ["target"]
+  }
+}
+```
+
+`raw/layout.json`
+- Same placement and simulation contract as the indexed `layout.json`
+- Keep domain cluster positions and force tuning aligned with the indexed export so both modes describe the same graph
 
 Model the codebase as one readable combined architecture graph with enough depth to reflect both the overview and the deeper screen and flow analysis:
 - Points should represent the important architectural and behavioral entities in the map, not just top-level modules.
@@ -439,8 +452,8 @@ The goal is not just validity but reuse:
 - Keep the schema consistent within one export.
 - Ensure every `source` and `target` refers to an existing point `id`.
 - Ensure every `sourceIndex` and `targetIndex` refers to an existing point `index`.
+- Keep `layout.json` aligned with the `domain` values actually present on points.
 - Keep the raw and indexed exports semantically aligned so they describe the same graph at different preparation levels.
-- Keep `layout.json` and `config.layout.json` aligned with the `domain` values actually present on points.
 
 ### Step 8 - Confirm succinctly
 
