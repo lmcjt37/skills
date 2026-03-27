@@ -227,6 +227,12 @@ Generate both export modes unless the user explicitly asks for only one:
 - Raw JSON plus Data Kit mapping config
 - Fully indexed v2-ready JSON plus direct render config
 
+Use one combined graph dataset for each export mode:
+- One `points` dataset
+- One `links` dataset
+- Do not split the graph into separate overview and behavior files
+- Instead, encode both overview structure and deeper behavioral detail inside the same dataset using metadata fields and pruning rules
+
 Write:
 - `architecture/cosmograph/points.json`
 - `architecture/cosmograph/links.json`
@@ -247,12 +253,12 @@ Default file contents:
 `points.json`
 - JSON array of point objects
 - Each point must include `id`
-- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, and `layer` when available
+- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, `layer`, `cluster`, `subcluster`, `graphLevel`, `importance`, and `sizeWeight` when available
 
 `links.json`
 - JSON array of link objects
 - Each link must include `source` and `target`
-- Prefer also including `relationship`, `label`, `inferred`, `evidence`, and `flow` when available
+- Prefer also including `relationship`, `label`, `inferred`, `evidence`, `flow`, `graphLevel`, and `strength` when available
 
 `config.json`
 - JSON object shaped for Cosmograph data preparation
@@ -275,7 +281,7 @@ Default file contents:
   - `id`
   - `index`
 - `index` must be a unique zero-based ordinal integer aligned with the full points array
-- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, and `layer`
+- Prefer also including `label`, `kind`, `domain`, `path`, `notes`, `layer`, `cluster`, `subcluster`, `graphLevel`, `importance`, and `sizeWeight`
 
 `links.indexed.json`
 - JSON array of link objects for direct Cosmograph v2 rendering
@@ -286,7 +292,7 @@ Default file contents:
   - `targetIndex`
 - `sourceIndex` and `targetIndex` must match the `index` values of the referenced points
 - Cosmograph v2 expects single source-target pairs, so flatten any multi-target relationship into separate link rows
-- Prefer also including `relationship`, `label`, `inferred`, `evidence`, and `flow`
+- Prefer also including `relationship`, `label`, `inferred`, `evidence`, `flow`, `graphLevel`, and `strength`
 
 `config.indexed.json`
 - JSON object for direct Cosmograph rendering against indexed JSON
@@ -349,7 +355,7 @@ Example:
 }
 ```
 
-Model the codebase as a readable architecture graph with enough depth to reflect the screen and flow analysis:
+Model the codebase as one readable combined architecture graph with enough depth to reflect both the overview and the deeper screen and flow analysis:
 - Points should represent the important architectural and behavioral entities in the map, not just top-level modules.
 - Include points where relevant for:
   - apps, packages, domains, routes, screens, and view containers
@@ -359,6 +365,11 @@ Model the codebase as a readable architecture graph with enough depth to reflect
   - helpers, mappers, adapters, formatters, validators, and error handlers
 - Use `kind` to distinguish point types such as `domain`, `screen`, `flow`, `trigger`, `state`, `service`, `store`, `helper`, `api`, `database`, `external`, or `error_handler`.
 - Use `layer` when useful to distinguish UI, orchestration, domain, data, platform, or external concerns.
+- Use `cluster` for the major deterministic placement group, usually the same as `domain`.
+- Use `subcluster` for local grouping within the domain, for example `ui`, `flow`, `state`, `service`, `helper`, or `external`.
+- Use `graphLevel` to distinguish nodes that are part of the top-level overview from nodes that add deeper behavioral detail. Prefer values such as `overview` and `behavior`.
+- Use `importance` to distinguish `high`, `medium`, and `low` signal nodes.
+- Use `sizeWeight` as a numeric hint for later rendering or filtering.
 - Prefer fewer high-signal points over a noisy file-by-file dump unless the user explicitly wants file-level granularity.
 
 Links should represent concrete structural and behavioral relationships such as:
@@ -381,13 +392,17 @@ Links should represent concrete structural and behavioral relationships such as:
 - `implements`
 - `coupled_to`
 
+Use link metadata deliberately:
+- Use `graphLevel` to distinguish overview edges from deeper behavioral edges.
+- Use `strength` as a numeric hint for prominent versus secondary relationships.
+- Use `flow` when the edge belongs to a named lifecycle or user journey.
+
 When deeper mapping is available:
 - Represent major screens as points.
 - Represent important flows as points.
 - Represent major rendered states as points when they clarify behavior.
 - Represent helpers and error-handling components as points when they materially shape control flow.
 - Add links that show which trigger starts a flow, which flow calls which functions or services, which states can be rendered, where errors move, and which files or components are tightly coupled.
-- Use `flow` on links when a relationship belongs to a named lifecycle or user journey.
 - Use `notes` on points for concise inferred rationale or implementation context when it helps future reuse.
 
 Cosmograph exports should stay aligned with the deeper docs:
@@ -397,6 +412,13 @@ Cosmograph exports should stay aligned with the deeper docs:
 - If coupling or helper usage is called out in the docs, encode the important relationships in the graph instead of leaving them only in prose.
 - Major domains should usually be clusterable by a shared `domain` field so deterministic domain placement is possible.
 
+The combined graph should remain readable:
+- `overview` nodes and edges should form the backbone of the graph.
+- `behavior` nodes and edges should enrich the local picture, not drown the backbone.
+- Behavioral nodes should usually attach to a parent screen, flow, service, or domain instead of floating as isolated graph noise.
+- Do not emit low-value helper, state, or trigger nodes unless they materially clarify lifecycle, rendering, error handling, or coupling.
+- Prefer one high-signal node with good metadata over several near-duplicate nodes.
+
 Do not try to encode every function as a point by default.
 Use flow, state, helper, and coupling nodes selectively so the graph becomes more explanatory, not more cluttered.
 Keep ids stable and filesystem-safe where possible.
@@ -405,6 +427,7 @@ Mark uncertain relationships with `inferred: true` and include short evidence or
 For layout and spacing:
 - Use `pointClusterBy` with the major domain field, usually `domain`, so the graph can cluster by major area.
 - Emit `clusterPositionsMap` so major domains have deterministic positions across runs.
+- Keep `overview` nodes visually central within each domain cluster and allow `behavior` nodes to sit slightly more peripherally through moderate repulsion and link distance.
 - Use `simulationRepulsion` and `simulationLinkDistance` to slightly separate nodes within each domain cluster rather than relying only on cluster placement.
 - Keep force tuning moderate. The goal is readable domain interiors, not exploding related nodes so far apart that flows become hard to follow.
 - Prefer consistent placement strategies across iterations of the same repo, for example auth on the left, primary product flows in the center, platform or settings to the right, external systems at the periphery.
