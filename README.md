@@ -61,9 +61,21 @@ npx skills@latest add lmcjt37/skills/map-architecture
 *Slash commands*
 - `/map-architecture <domain>`
 
+## Cosmograph 🪐
+
+Walks a codebase and produces a render-ready Cosmograph architecture dataset.
+
+```
+npx skills@latest add lmcjt37/skills/cosmograph
+```
+
+*Slash commands*
+- `/cosmograph`
+
 ---
 
 ## References
 
 - [https://skills.sh/](https://skills.sh/)
 - [https://github.com/vercel-labs/skills](https://github.com/vercel-labs/skills)
+- [https://cosmograph.app/](https://cosmograph.app/)
