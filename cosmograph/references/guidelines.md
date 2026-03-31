@@ -2,6 +2,15 @@
 
 Load this file when you need concrete schema guidance, dataset contracts, ID conventions, or render tuning details while applying the `cosmograph` skill.
 
+## Scan-root discipline
+
+Treat `SCAN_ROOT` as the current working directory captured at skill start.
+Do not read or emit peer-platform or sibling-directory architecture outside `SCAN_ROOT` unless the user explicitly broadens scope.
+
+Examples:
+- If `SCAN_ROOT` is `<root>/ios/`, exclude `<root>/android/`
+- If `SCAN_ROOT` is `<root>/packages/app/`, exclude `<root>/packages/server/`
+
 ## Granularity guidance
 
 Bias toward denser architectural coverage when the added detail improves the render.

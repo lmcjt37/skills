@@ -21,21 +21,23 @@ Run this skill when:
 
 ## Golden rules
 
-1. Never write outside the closest git repo root.
-2. Start from the current working directory. Treat it as the requested scan root unless the user explicitly broadens scope.
-3. Scope discovery and extraction to the current working directory subtree only. Do not traverse sibling or peer directories outside that subtree unless the user explicitly asks for broader coverage.
-4. Start with discovery. Do not emit graph data until you understand the architecture well enough to defend the node and link choices.
-5. Stay architecture-pattern agnostic. Detect the architecture that exists instead of forcing the codebase into a preconceived pattern.
-6. Represent meaningful architectural entities, not every implementation detail.
-7. Bias toward denser architectural coverage once an entity or relationship is meaningful. Prefer more truthful detail over an overly sparse graph.
-8. Every link must have semantic meaning. Avoid generic unlabeled edges.
-9. Prefer evidence over interpretation. Mark inferred edges or classifications explicitly.
-10. Keep the graph renderable. If a choice would create noise without insight, collapse or omit it.
-11. Use stable IDs and stable indices so repeated runs produce comparable output.
-12. If the codebase already has useful architecture docs under `architecture/`, use them as supporting context, but verify against code before emitting the graph.
-13. If layout is obvious from the graph shape, omit `layout.json`. Only create it when it materially improves readability.
-14. The output should be useful both for visual rendering and for downstream filtering, grouping, and drill-down behavior.
-15. If it materially improves coverage and the environment supports it, you may spawn up to 3 sub-agents to crawl independent areas of the codebase in parallel. Use them to accelerate evidence gathering, not to bypass synthesis.
+1. Define `SCAN_ROOT` as the current working directory at skill start.
+2. `SCAN_ROOT` is the authoritative read scope unless the user explicitly broadens it.
+3. Never read, trace, classify, or emit files outside the `SCAN_ROOT` subtree unless the user explicitly asks for broader coverage.
+4. Treat the closest git repo root only as the write safety boundary, not as the scan scope.
+5. Never write outside the closest git repo root.
+6. Start with discovery. Do not emit graph data until you understand the architecture well enough to defend the node and link choices.
+7. Stay architecture-pattern agnostic. Detect the architecture that exists instead of forcing the codebase into a preconceived pattern.
+8. Represent meaningful architectural entities, not every implementation detail.
+9. Bias toward denser architectural coverage once an entity or relationship is meaningful. Prefer more truthful detail over an overly sparse graph.
+10. Every link must have semantic meaning. Avoid generic unlabeled edges.
+11. Prefer evidence over interpretation. Mark inferred edges or classifications explicitly.
+12. Keep the graph renderable. If a choice would create noise without insight, collapse or omit it.
+13. Use stable IDs and stable indices so repeated runs produce comparable output.
+14. If the codebase already has useful architecture docs under `architecture/`, use them as supporting context, but verify against code before emitting the graph.
+15. If layout is obvious from the graph shape, omit `layout.json`. Only create it when it materially improves readability.
+16. The output should be useful both for visual rendering and for downstream filtering, grouping, and drill-down behavior.
+17. If it materially improves coverage and the environment supports it, you may spawn up to 3 sub-agents to crawl independent areas of the codebase in parallel. Any sub-agent must inherit the same `SCAN_ROOT` restriction.
 
 ## Output structure
 
@@ -86,15 +88,17 @@ Those details can be:
 
 ### Step 1 - Find repo root and scope
 
-- Start from the current working directory and treat it as the scan root.
+- Capture the current working directory as `SCAN_ROOT`.
 - Determine the closest git repo root.
-- Identify whether the user wants a whole-app map or a bounded domain.
+- Treat the repo root only as the write safety boundary for emitted files.
+- Identify whether the user wants the full architecture within `SCAN_ROOT` or a bounded domain within `SCAN_ROOT`.
 - Do not assume the repo root is the requested scope. The human is responsible for positioning the working directory before running the skill.
-- Do not inspect sibling or peer directories outside the current working directory subtree unless the user explicitly broadens scope.
+- Enforce a simple path rule: if a candidate file or directory does not live under `SCAN_ROOT`, exclude it unless the user explicitly broadens scope.
 - If the user runs the skill from `<root>/ios/`, map only the iOS subtree and do not emit Android or other peer-platform traces.
-- Default to a full-architecture map for the scanned area.
+- Default to a full-architecture map for the scanned area under `SCAN_ROOT`.
 - If the codebase is large, break the architecture into domain slices and map one slice at a time until the full architecture is covered.
 - Do not reduce scope to only "meaningful top-level areas" as a shortcut. Coverage across the full architecture is the default requirement.
+- If existing docs or registries reference systems outside `SCAN_ROOT`, treat them as out-of-scope context unless the user explicitly broadens the scan boundary.
 
 ### Step 2 - Discover top-level architecture
 
@@ -142,6 +146,7 @@ If beneficial, split discovery across up to 3 sub-agents by independent areas su
 
 Keep final modeling decisions centralized in the main agent.
 When the architecture is broad, use the domain slices as the unit of progress and complete them one by one.
+Do not assign a sub-agent any area outside `SCAN_ROOT`.
 
 ### Step 3 - Extract candidate points
 
@@ -323,6 +328,7 @@ Before finishing, verify:
 - The output folder exists
 - The domain tracking folder exists if you used domain slices
 - No points or links were emitted from sibling or peer directories outside the current working directory subtree unless the user explicitly asked for broader scope
+- Every emitted `path` starts with or resolves under `SCAN_ROOT`
 - `points.json` parses
 - `links.json` parses
 - `config.json` parses
