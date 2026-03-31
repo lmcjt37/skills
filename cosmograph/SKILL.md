@@ -92,6 +92,14 @@ Those details can be:
 - folded into a parent point
 - surfaced as metadata on a point
 
+## Definitions
+
+- `route`: A stable entry into a user-visible or system-driven flow. A route starts a meaningful architectural path and should answer "where does this flow begin?" Routes can be router declarations, navigation destinations, tab roots, modal paths, deep-link targets, bootstrap handoffs, or workflow entries triggered by lifecycle or state.
+- `boundary`: The point where the core app hands off to another architectural surface rather than continuing through its own composition chain. Boundaries commonly include external APIs, SDKs, databases, caches, queues, platform services, shared infrastructure outside the scanned domain, or out-of-root dependencies brought in to complete an in-scope path.
+- `entry point`: The first stable touchpoint through which a route, dependency, feature, or subsystem is entered. Entry points are where traversal should begin for that path. Examples include app delegates, scene delegates, root coordinators, main routers, feature registries, builder entry functions, and dependency facade methods.
+- `meaningful child view`: A child view or subcomponent that contributes real architectural information rather than only visual splitting. It usually has its own composition logic, state binding, orchestration role, navigation trigger, conditional rendering branch, dependency usage, reusable feature role, or row/item-level behavior that affects flow tracing.
+- `trivial pass-through wrapper`: A layer that forwards construction, rendering, or calls without adding meaningful branching, state ownership, dependency selection, transformation, lifecycle behavior, or architectural responsibility. These may be collapsed when keeping them would only restate an adjacent point with no new insight.
+
 ## How to walk the codebase
 
 ### Step 1 - Find repo root and scope
