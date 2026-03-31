@@ -23,17 +23,19 @@ Run this skill when:
 
 1. Never write outside the closest git repo root.
 2. Start from the current working directory. Treat it as the requested scan root unless the user explicitly broadens scope.
-3. Start with discovery. Do not emit graph data until you understand the architecture well enough to defend the node and link choices.
-4. Stay architecture-pattern agnostic. Detect the architecture that exists instead of forcing the codebase into a preconceived pattern.
-5. Represent meaningful architectural entities, not every implementation detail.
-6. Every link must have semantic meaning. Avoid generic unlabeled edges.
-7. Prefer evidence over interpretation. Mark inferred edges or classifications explicitly.
-8. Keep the graph renderable. If a choice would create noise without insight, collapse or omit it.
-9. Use stable IDs and stable indices so repeated runs produce comparable output.
-10. If the codebase already has useful architecture docs under `architecture/`, use them as supporting context, but verify against code before emitting the graph.
-11. If layout is obvious from the graph shape, omit `layout.json`. Only create it when it materially improves readability.
-12. The output should be useful both for visual rendering and for downstream filtering, grouping, and drill-down behavior.
-13. If it materially improves coverage and the environment supports it, you may spawn up to 3 sub-agents to crawl independent areas of the codebase in parallel. Use them to accelerate evidence gathering, not to bypass synthesis.
+3. Scope discovery and extraction to the current working directory subtree only. Do not traverse sibling or peer directories outside that subtree unless the user explicitly asks for broader coverage.
+4. Start with discovery. Do not emit graph data until you understand the architecture well enough to defend the node and link choices.
+5. Stay architecture-pattern agnostic. Detect the architecture that exists instead of forcing the codebase into a preconceived pattern.
+6. Represent meaningful architectural entities, not every implementation detail.
+7. Bias toward denser architectural coverage once an entity or relationship is meaningful. Prefer more truthful detail over an overly sparse graph.
+8. Every link must have semantic meaning. Avoid generic unlabeled edges.
+9. Prefer evidence over interpretation. Mark inferred edges or classifications explicitly.
+10. Keep the graph renderable. If a choice would create noise without insight, collapse or omit it.
+11. Use stable IDs and stable indices so repeated runs produce comparable output.
+12. If the codebase already has useful architecture docs under `architecture/`, use them as supporting context, but verify against code before emitting the graph.
+13. If layout is obvious from the graph shape, omit `layout.json`. Only create it when it materially improves readability.
+14. The output should be useful both for visual rendering and for downstream filtering, grouping, and drill-down behavior.
+15. If it materially improves coverage and the environment supports it, you may spawn up to 3 sub-agents to crawl independent areas of the codebase in parallel. Use them to accelerate evidence gathering, not to bypass synthesis.
 
 ## Output structure
 
@@ -88,6 +90,8 @@ Those details can be:
 - Determine the closest git repo root.
 - Identify whether the user wants a whole-app map or a bounded domain.
 - Do not assume the repo root is the requested scope. The human is responsible for positioning the working directory before running the skill.
+- Do not inspect sibling or peer directories outside the current working directory subtree unless the user explicitly broadens scope.
+- If the user runs the skill from `<root>/ios/`, map only the iOS subtree and do not emit Android or other peer-platform traces.
 - Default to a full-architecture map for the scanned area.
 - If the codebase is large, break the architecture into domain slices and map one slice at a time until the full architecture is covered.
 - Do not reduce scope to only "meaningful top-level areas" as a shortcut. Coverage across the full architecture is the default requirement.
@@ -142,6 +146,8 @@ When the architecture is broad, use the domain slices as the unit of progress an
 ### Step 3 - Extract candidate points
 
 Create candidate points only for entities that matter architecturally.
+Favor a richer dataset when the additional nodes and edges clarify the render.
+The default failure mode should be under-collapse, not over-collapse.
 
 Good candidates:
 - User-visible screens and routes
@@ -150,6 +156,7 @@ Good candidates:
 - Services and repositories
 - Databases, caches, queues, or APIs
 - Packages or modules that contain meaningful feature boundaries
+- Use cases, reducers, actions, selectors, middleware, handlers, coordinators, hooks, contexts, registries, and adapters when they materially shape architecture
 - Important flows, triggers, rendered states, or helpers when they materially clarify lifecycle, control flow, error handling, or coupling
 
 Weak candidates that usually should not stand alone:
@@ -159,8 +166,8 @@ Weak candidates that usually should not stand alone:
 - Small leaf utility files
 
 When in doubt:
-- Prefer collapsing a low-value candidate into metadata on a parent point
-- Or omit it entirely if it adds graph noise
+- Prefer keeping a candidate if it clarifies stack traversal, domain clustering, or cross-domain coupling
+- Collapse or omit only when the candidate is repetitive and does not improve understanding
 
 Behavioral nodes are optional and should be used selectively.
 Include them when they make the graph more explanatory, not merely more detailed.
@@ -182,6 +189,8 @@ Coverage check for candidate points:
 - Do they expose domain clusters and the important shared infrastructure between domains?
 - Are there missing orchestration points such as reducers, actions, handlers, use cases, middleware, contexts, jobs, or schedulers that would make the links more truthful?
 - Are there missing boundary points such as caches, queues, SDKs, webhooks, feature flags, configuration registries, or schema roots that would make cross-domain behavior more legible?
+- Are there enough intermediate points to make the render legible without forcing a human to infer large hidden jumps?
+- Have you traced through enough lower-level components that each important domain path reads as a chain rather than a single coarse edge?
 
 When working domain-by-domain, keep an intermediate tracking file for each domain under `architecture/domains/`.
 Recommended filename:
@@ -238,6 +247,7 @@ For each candidate point, inspect:
 Only create a link if the relationship is meaningful and supported by code.
 Walk each important path from top to bottom of the stack wherever possible.
 Do not stop at the first obvious dependency hop.
+Prefer multiple specific links over a single coarse link when the intermediate architectural steps matter.
 Trace through:
 - conditional branches
 - fallback paths
@@ -277,7 +287,8 @@ Before writing output:
 Use these heuristics to avoid a bad render:
 
 - Prioritize breadth of architecture over microscopic detail
-- Keep helper and utility explosion out of the first-pass graph
+- Prefer richer architectural granularity over an overly thin first-pass graph
+- Keep helper and utility explosion out of the graph only when those helpers do not change control flow, coupling, or stack traversal
 - Favor typed relationships over dense generic connectivity
 - Prefer one representative point per architectural concept
 - Use parent-child containment to preserve context without over-linking
@@ -311,6 +322,7 @@ Do not skip discovery and jump straight to generation.
 Before finishing, verify:
 - The output folder exists
 - The domain tracking folder exists if you used domain slices
+- No points or links were emitted from sibling or peer directories outside the current working directory subtree unless the user explicitly asked for broader scope
 - `points.json` parses
 - `links.json` parses
 - `config.json` parses

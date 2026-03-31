@@ -2,6 +2,21 @@
 
 Load this file when you need concrete schema guidance, dataset contracts, ID conventions, or render tuning details while applying the `cosmograph` skill.
 
+## Granularity guidance
+
+Bias toward denser architectural coverage when the added detail improves the render.
+Prefer enough intermediate points and links that a developer can follow important paths without mentally reconstructing missing hops.
+
+Good reasons to increase granularity:
+- a domain path collapses too many architectural steps into one edge
+- cross-domain coupling is real but disappears in an overly coarse graph
+- orchestration layers such as hooks, coordinators, reducers, handlers, middleware, or use cases are architecturally important
+- lower-level nodes make clusters and shared infrastructure easier to understand
+
+Poor reasons to increase granularity:
+- adding repetitive leaf helpers that do not affect flow or coupling
+- modeling every function when the function-level graph adds noise rather than architectural meaning
+
 ## Recommended point taxonomy
 
 Use the smallest useful set of point types that matches the codebase.
@@ -184,7 +199,7 @@ Base template:
   "pointIndexBy": "index",
   "pointLabelBy": "label",
   "pointColorBy": "type",
-  "pointSizeBy": "sizeWeight",
+  "pointSizeStrategy": "degree",
   "pointClusterBy": "cluster",
   "pointIncludeColumns": ["*"],
   "linkSourceBy": "source",
@@ -192,6 +207,7 @@ Base template:
   "linkTargetBy": "target",
   "linkTargetIndexBy": "targetIndex",
   "linkColorBy": "type",
+  "linkWidthStrategy": "sum",
   "linkWidthBy": "strength",
   "linkIncludeColumns": ["*"],
   "showDynamicLabels": true,
@@ -212,7 +228,8 @@ Base template:
 Adjust the config to the dataset:
 - Cluster by `cluster`, `layer`, `domain`, or `parentId` depending on which gives the clearest graph
 - Color by `type` unless `layer` is more informative
-- Size by `sizeWeight`, `importance`, or another normalized weight
+- Default point sizing to `degree` so well-connected nodes surface naturally in the render
+- Default link sizing to `sum` with a numeric width column such as `strength` so shared paths accumulate visual weight
 - If you already provide manual coordinates via layout, consider disabling or softening simulation
 
 ### `architecture/output/layout.json`
