@@ -5,7 +5,13 @@ Load this file when you need concrete schema guidance, dataset contracts, ID con
 ## Scan-root discipline
 
 Treat `SCAN_ROOT` as the current working directory captured at skill start.
-Do not read or emit peer-platform or sibling-directory architecture outside `SCAN_ROOT` unless the user explicitly broadens scope.
+Treat `WRITE_ROOT` as the closest git repo root.
+Do not read, trace, or classify peer-platform or sibling-directory architecture outside `SCAN_ROOT` unless the user explicitly broadens scope.
+Do not silently reset scope to the repo root just because it is easier to scan from there.
+Exception: you may inspect a file outside `SCAN_ROOT` only when an in-scope route, screen, container, builder, view model, service, or other touchpoint directly or transitively depends on it and you need that file to complete a truthful path through the architecture.
+When using that exception, keep the scan narrow and dependency-driven rather than expanding into general discovery of the external subtree.
+Always write generated architecture artifacts to `WRITE_ROOT/architecture/...` rather than under `SCAN_ROOT` when those differ.
+Do not include out-of-scope architecture in the graph unless it was brought in through that dependency exception or the user explicitly expanded scope.
 
 Examples:
 - If `SCAN_ROOT` is `<root>/ios/`, exclude `<root>/android/`
@@ -20,6 +26,9 @@ Good reasons to increase granularity:
 - a domain path collapses too many architectural steps into one edge
 - cross-domain coupling is real but disappears in an overly coarse graph
 - orchestration layers such as hooks, coordinators, reducers, handlers, middleware, or use cases are architecturally important
+- builder, factory, assembler, or view-model layers shape how a screen is composed or how dependencies are injected
+- route, container, screen, and child-view coverage would otherwise be incomplete
+- lifecycle and state-driven branches such as loading, empty, modal, retry, or error paths materially affect the flow
 - lower-level nodes make clusters and shared infrastructure easier to understand
 
 Poor reasons to increase granularity:
@@ -33,10 +42,14 @@ Start from these defaults and omit types that do not apply:
 
 - `package`
 - `module`
+- `container`
 - `screen`
 - `route`
 - `view`
 - `component`
+- `builder`
+- `factory`
+- `coordinator`
 - `view_model`
 - `controller`
 - `store`
@@ -121,6 +134,7 @@ When the codebase has meaningful behavioral structure, selectively add these poi
 - `flow`
 - `trigger`
 - `state`
+- `modal`
 - `helper`
 - `error_handler`
 
@@ -131,6 +145,9 @@ When the codebase has meaningful behavioral structure, selectively add these rel
 - `uses_helper`
 - `guards`
 - `retries`
+- `presents`
+- `dismisses`
+- `builds`
 
 Recommended link shape:
 
@@ -338,6 +355,25 @@ Examples:
 - `inferred`: `UserService` classified as `service` based on directory and public methods
 
 Do not hide uncertainty.
+
+## Coverage expectations
+
+Treat full architectural coverage as the default requirement for the scanned area, not an aspirational stretch goal.
+
+Minimum expectations:
+- at least one point for every route in scope
+- at least one point for every container, screen, and meaningful child view in scope
+- associated builder, factory, coordinator, and view-model touchpoints represented when those patterns exist
+- link chains that let a developer trace from route or entrypoint through presentation and orchestration into data or integration boundaries
+- stateful and lifecycle branches checked for loading, empty, error, retry, modal, and cross-domain navigation behavior where present
+
+Before finalizing a graph, run a completeness audit and then a re-audit.
+The re-audit should explicitly look for:
+- routes discovered from registries that never made it into the dataset
+- screens whose child views or containers were collapsed too aggressively
+- builders, factories, coordinators, or view models omitted from a screen flow
+- modal or navigation triggers that jump into other domains
+- alternate state paths that materially change orchestration or rendering
 
 ## Render-first guidance
 

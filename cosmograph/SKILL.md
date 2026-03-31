@@ -22,9 +22,9 @@ Run this skill when:
 ## Golden rules
 
 1. Define `SCAN_ROOT` as the current working directory at skill start.
-2. `SCAN_ROOT` is the authoritative read scope unless the user explicitly broadens it.
-3. Never read, trace, classify, or emit files outside the `SCAN_ROOT` subtree unless the user explicitly asks for broader coverage.
-4. Treat the closest git repo root only as the write safety boundary, not as the scan scope.
+2. `SCAN_ROOT` is the explicit and authoritative starting scope. Do not silently widen from the current working directory to a repo root or sibling subtree.
+3. Never read, trace, or classify files outside the `SCAN_ROOT` subtree unless a direct dependency or transient dependency from an in-scope touchpoint requires it to complete a truthful architectural path.
+4. Treat the closest git repo root as the write root for all generated output, not as the scan scope.
 5. Never write outside the closest git repo root.
 6. Start with discovery. Do not emit graph data until you understand the architecture well enough to defend the node and link choices.
 7. Stay architecture-pattern agnostic. Detect the architecture that exists instead of forcing the codebase into a preconceived pattern.
@@ -38,8 +38,15 @@ Run this skill when:
 15. If layout is obvious from the graph shape, omit `layout.json`. Only create it when it materially improves readability.
 16. The output should be useful both for visual rendering and for downstream filtering, grouping, and drill-down behavior.
 17. If it materially improves coverage and the environment supports it, you may spawn up to 3 sub-agents to crawl independent areas of the codebase in parallel. Any sub-agent must inherit the same `SCAN_ROOT` restriction.
+18. The minimum acceptable coverage is full route-to-boundary architecture coverage for the scanned area, including at least one point for every route, container, screen, and meaningful child view in scope.
+19. If the codebase uses builder, factory, coordinator, assembler, or view-model patterns, those orchestration touchpoints are first-class candidates and should usually be represented as points.
+20. A domain is not complete until you have explicitly audited steady-state flows plus lifecycle, loading, empty, error, modal, and cross-domain navigation paths where they exist.
+21. When you believe the map is complete, perform a deliberate re-audit of the domain to look for missing routes, branches, state transitions, and indirect touchpoints before finalizing output.
 
 ## Output structure
+
+Resolve `WRITE_ROOT` as the closest git repo root.
+Always write generated files relative to `WRITE_ROOT`, even when `SCAN_ROOT` is a deeper subdirectory.
 
 Write to:
 - `architecture/output/points.json`
@@ -48,8 +55,8 @@ Write to:
 - `architecture/output/layout.json` when a guided layout materially improves the render
 - `architecture/domains/<domain>.yml` for intermediate per-domain tracking when the map is built incrementally
 
-Create `architecture/output/` if missing.
-Create `architecture/domains/` if missing when using per-domain tracking files.
+Create `WRITE_ROOT/architecture/output/` if missing.
+Create `WRITE_ROOT/architecture/domains/` if missing when using per-domain tracking files.
 
 Reference material:
 - For point and link schemas, output contracts, stable ID patterns, evidence rules, and render tuning, load [references/guidelines.md](./references/guidelines.md).
@@ -89,11 +96,13 @@ Those details can be:
 ### Step 1 - Find repo root and scope
 
 - Capture the current working directory as `SCAN_ROOT`.
-- Determine the closest git repo root.
-- Treat the repo root only as the write safety boundary for emitted files.
+- Determine the closest git repo root and store it as `WRITE_ROOT`.
+- Treat `WRITE_ROOT` as the output location for generated files, not as the scan scope.
 - Identify whether the user wants the full architecture within `SCAN_ROOT` or a bounded domain within `SCAN_ROOT`.
 - Do not assume the repo root is the requested scope. The human is responsible for positioning the working directory before running the skill.
 - Enforce a simple path rule: if a candidate file or directory does not live under `SCAN_ROOT`, exclude it unless the user explicitly broadens scope.
+- A file outside `SCAN_ROOT` may be inspected only when an in-scope touchpoint directly imports, constructs, invokes, or routes into it, or when a transient dependency must be followed to complete a truthful architectural chain.
+- When stepping outside `SCAN_ROOT` for dependency reasons, keep the excursion minimal and evidence-driven. Read only the external files needed to explain the in-scope path, and do not expand that external area into a separate discovery pass.
 - If the user runs the skill from `<root>/ios/`, map only the iOS subtree and do not emit Android or other peer-platform traces.
 - Default to a full-architecture map for the scanned area under `SCAN_ROOT`.
 - If the codebase is large, break the architecture into domain slices and map one slice at a time until the full architecture is covered.
@@ -131,6 +140,7 @@ Useful things to inspect:
 - Navigation or router definitions
 - Dependency injection setup
 - Feature registries
+- Builders, factories, coordinators, assemblers, and composition roots
 - Store or state composition
 - Service and repository directories
 - Network and persistence layers
@@ -156,8 +166,10 @@ The default failure mode should be under-collapse, not over-collapse.
 
 Good candidates:
 - User-visible screens and routes
+- Containers, feature roots, and layout shells that own major view composition
 - Major views/components that structure a screen
 - View models, controllers, stores, presenters
+- Builders, factories, coordinators, assemblers, and other composition/orchestration touchpoints
 - Services and repositories
 - Databases, caches, queues, or APIs
 - Packages or modules that contain meaningful feature boundaries
@@ -190,18 +202,21 @@ Poor uses:
 
 Coverage check for candidate points:
 - Do the chosen points let you trace the system from entrypoint to external boundary?
+- Is there at least one point for every route, container, screen, and meaningful child view in the scanned area?
+- If the codebase uses builder, factory, coordinator, or MVVM patterns, have you represented the builder/factory/coordinator and the view model for each relevant screen flow?
 - Do they cover both steady-state dependencies and transient runtime touchpoints?
 - Do they expose domain clusters and the important shared infrastructure between domains?
 - Are there missing orchestration points such as reducers, actions, handlers, use cases, middleware, contexts, jobs, or schedulers that would make the links more truthful?
 - Are there missing boundary points such as caches, queues, SDKs, webhooks, feature flags, configuration registries, or schema roots that would make cross-domain behavior more legible?
 - Are there enough intermediate points to make the render legible without forcing a human to infer large hidden jumps?
 - Have you traced through enough lower-level components that each important domain path reads as a chain rather than a single coarse edge?
+- Have you captured alternate rendered states and lifecycle touchpoints such as loading, empty, disabled, success, retry, and error where those states materially affect navigation, orchestration, or data flow?
 
-When working domain-by-domain, keep an intermediate tracking file for each domain under `architecture/domains/`.
+When working domain-by-domain, keep an intermediate tracking file for each domain under `WRITE_ROOT/architecture/domains/`.
 Recommended filename:
-- `architecture/domains/auth.yml`
-- `architecture/domains/payments.yml`
-- `architecture/domains/shared-infra.yml`
+- `WRITE_ROOT/architecture/domains/auth.yml`
+- `WRITE_ROOT/architecture/domains/payments.yml`
+- `WRITE_ROOT/architecture/domains/shared-infra.yml`
 
 Use these files to track candidate points and candidate links before final normalization.
 They exist to make the crawl inspectable by humans and to reduce the chance of losing cross-domain context while moving slice by slice.
@@ -248,6 +263,7 @@ For each candidate point, inspect:
 - What state it binds to
 - What data sources it reads or writes
 - What screen or flow it transitions to
+- What lifecycle state changes, loading branches, empty states, retry paths, or modal/navigation triggers it owns
 
 Only create a link if the relationship is meaningful and supported by code.
 Walk each important path from top to bottom of the stack wherever possible.
@@ -258,6 +274,10 @@ Trace through:
 - fallback paths
 - feature-flagged behavior
 - async triggers and callbacks
+- lifecycle hooks and startup paths
+- loading, empty, success, disabled, and error state transitions when they change render, navigation, or orchestration
+- modal presentation and dismissal paths
+- builder, factory, coordinator, and dependency injection assembly paths
 - transient dependencies such as helpers, middleware, adapters, or mappers when they materially shape control flow
 - cross-domain handoffs and shared infrastructure
 
@@ -311,14 +331,16 @@ Follow this order:
 1. Walk the code to understand architecture
 2. Identify the architecture patterns present and select point and link types that fit them
 3. Partition the architecture into domain slices when needed so the full map can be built incrementally without dropping coverage
-4. For each domain slice, record intermediate candidate points and links in `architecture/domains/<domain>.yml`
+4. For each domain slice, record intermediate candidate points and links in `WRITE_ROOT/architecture/domains/<domain>.yml`
 5. Check whether the collection points are sufficient for a faithful point-to-link mapping and add missing categories when needed
 6. Trace important flows from top to bottom of the stack, including meaningful branches and transient dependencies
-7. Repeat until all relevant domain slices in scope are covered
-8. Normalize shared points and cross-domain links across the domain files
-9. Output `points.json` and `links.json`
-10. Create `config.json` to help render and explore the dataset
-11. Create `layout.json` only if a guided layout materially improves readability
+7. Run a completeness audit for each domain slice against routes, containers, screens, child views, orchestrators, state branches, and navigation outcomes
+8. Re-audit the domain slice after you think it is complete to search specifically for missed routes, state changes, modals, errors, loading flows, and cross-domain touchpoints
+9. Repeat until all relevant domain slices in scope are covered
+10. Normalize shared points and cross-domain links across the domain files
+11. Output `points.json` and `links.json`
+12. Create `config.json` to help render and explore the dataset
+13. Create `layout.json` only if a guided layout materially improves readability
 
 Do not skip discovery and jump straight to generation.
 
@@ -327,8 +349,9 @@ Do not skip discovery and jump straight to generation.
 Before finishing, verify:
 - The output folder exists
 - The domain tracking folder exists if you used domain slices
-- No points or links were emitted from sibling or peer directories outside the current working directory subtree unless the user explicitly asked for broader scope
-- Every emitted `path` starts with or resolves under `SCAN_ROOT`
+- Generated output was written under `WRITE_ROOT`, even if `SCAN_ROOT` was a deeper subdirectory
+- No points or links were emitted from sibling or peer directories outside the current working directory subtree unless they were required as direct or transient dependencies of an in-scope touchpoint
+- Every emitted `path` starts with or resolves under `SCAN_ROOT`, or is explicitly marked as an out-of-root dependency included to complete an in-scope architectural chain
 - `points.json` parses
 - `links.json` parses
 - `config.json` parses
@@ -336,17 +359,24 @@ Before finishing, verify:
 - Each `architecture/domains/*.yml` file parses if created
 - Point indices are sequential and unique
 - Every link resolves to valid points
+- Every route in scope maps to at least one screen or container path in the graph
+- Every meaningful screen or container in scope has its major child views represented
+- Every screen flow that uses builder, factory, coordinator, or view-model orchestration includes those touchpoints unless there is clear evidence they are trivial pass-through wrappers
+- Loading, empty, error, retry, modal, and cross-domain navigation branches were checked and represented when architecturally meaningful
 - The graph is not overloaded with low-value nodes
 - `overview` nodes and edges still form a readable backbone
 - Behavioral nodes explain lifecycle, rendering, error handling, or coupling rather than adding incidental detail
 - The chosen config reflects the actual fields in the datasets
 - Cross-domain links remain explicit rather than being flattened into ambiguous local edges
+- A final re-audit was completed after the first full-pass map and either found no material gaps or resulted in additional points and links
 
 ## Response expectations
 
 When you complete the work, report:
 - Which area of the codebase was mapped
+- Whether any out-of-root dependency files were inspected and why
 - The files written under `architecture/output/`
 - The files written under `architecture/domains/` if any
+- The resolved `SCAN_ROOT` and `WRITE_ROOT`
 - The modeling decisions that shaped the graph
 - Any major inferred areas or confidence limits
