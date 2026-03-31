@@ -28,12 +28,26 @@ Good reasons to increase granularity:
 - orchestration layers such as hooks, coordinators, reducers, handlers, middleware, or use cases are architecturally important
 - builder, factory, assembler, or view-model layers shape how a screen is composed or how dependencies are injected
 - route, container, screen, and child-view coverage would otherwise be incomplete
+- the app flow includes explicit composition steps such as dependency creation, builder calls, screen initialization, tab wiring, row/item view construction, or nested child-view assembly
 - lifecycle and state-driven branches such as loading, empty, modal, retry, or error paths materially affect the flow
 - lower-level nodes make clusters and shared infrastructure easier to understand
 
 Poor reasons to increase granularity:
 - adding repetitive leaf helpers that do not affect flow or coupling
 - modeling every function when the function-level graph adds noise rather than architectural meaning
+- expanding inside a dependency boundary when the app only interacts through one or a few stable entry points
+
+Use asymmetric granularity:
+- Keep the app's own architecture highly explicit from entrypoint through composition, orchestration, rendering, and navigation
+- Keep external or lower-value dependency detail collapsed to the minimum truthful entry surface
+- If a dependency has one stable entry point, prefer one dependency point and one incoming link
+- If a dependency has multiple meaningful entry points, model those entry points but avoid mapping the dependency's internal tree unless the user explicitly asks for it
+- Favor additional points on the app side over additional points inside dependencies when choosing where to spend graph density
+
+Example expectation:
+- `SceneDelegate -> RootDependencies -> RootBuilder -> RootScreen` should normally be four points and three links
+- Continue the same stepwise treatment through tabs, screens, child views, row/item views, view models, and important conditional branches
+- Do not skip intermediate orchestration points unless they are trivial pass-through wrappers with no independent architectural role
 
 ## Recommended point taxonomy
 
@@ -148,6 +162,12 @@ When the codebase has meaningful behavioral structure, selectively add these rel
 - `presents`
 - `dismisses`
 - `builds`
+
+Useful relationship guidance for composition-heavy codebases:
+- Use `creates` when one point initializes another dependency or runtime object
+- Use `builds` when a builder, factory, assembler, or coordinator constructs a screen, container, or subtree
+- Use `renders` or `contains` to show view composition once the constructed UI subtree is known
+- Prefer several typed links across real touchpoints over one vague `depends_on` edge when the app flow is architecturally important
 
 Recommended link shape:
 

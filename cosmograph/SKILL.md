@@ -42,6 +42,7 @@ Run this skill when:
 19. If the codebase uses builder, factory, coordinator, assembler, or view-model patterns, those orchestration touchpoints are first-class candidates and should usually be represented as points.
 20. A domain is not complete until you have explicitly audited steady-state flows plus lifecycle, loading, empty, error, modal, and cross-domain navigation paths where they exist.
 21. When you believe the map is complete, perform a deliberate re-audit of the domain to look for missing routes, branches, state transitions, and indirect touchpoints before finalizing output.
+22. Use asymmetric granularity. Keep core app composition and user flows highly granular, but collapse dependency internals to the narrowest truthful entry surface when that dependency behaves like a boundary.
 
 ## Output structure
 
@@ -186,6 +187,12 @@ When in doubt:
 - Prefer keeping a candidate if it clarifies stack traversal, domain clustering, or cross-domain coupling
 - Collapse or omit only when the candidate is repetitive and does not improve understanding
 
+Dependency boundary rule:
+- If a dependency is entered through one stable architectural entry point, prefer one dependency point plus one incoming link from the in-scope caller
+- If a dependency exposes multiple distinct entry points that materially change how the app interacts with it, model only those entry points rather than the dependency's internal implementation tree
+- Keep dependency-side points and links to the minimum needed to preserve truthful architecture
+- Spend detail budget on the app's own composition chain first: entrypoint, dependency assembly, builders/factories/coordinators, containers, screens, meaningful child views, row/item views, and state/orchestration touchpoints
+
 Behavioral nodes are optional and should be used selectively.
 Include them when they make the graph more explanatory, not merely more detailed.
 
@@ -296,6 +303,13 @@ Examples:
 - `Service -> Helper` as `uses_helper`
 - `Flow -> ErrorHandler` as `handles_error_with`
 
+Granularity pattern:
+- Prefer explicit stepwise chains inside the core app when those steps are separate architectural touchpoints
+- Do not compress a path like `SceneDelegate -> RootDependencies -> RootBuilder -> RootScreen` into `SceneDelegate -> RootScreen`
+- Apply the same rule recursively through tabs, stacks, screens, subviews, row/item views, builders, view models, and conditional branches
+- If a path contains four meaningful orchestration steps, expect four points and three links before considering deeper branches
+- Collapse only when a step is a trivial pass-through with no independent architectural role
+
 ### Step 5 - Normalize and de-noise
 
 Before writing output:
@@ -313,6 +327,7 @@ Use these heuristics to avoid a bad render:
 
 - Prioritize breadth of architecture over microscopic detail
 - Prefer richer architectural granularity over an overly thin first-pass graph
+- Prefer full in-app path fidelity over deep dependency expansion
 - Keep helper and utility explosion out of the graph only when those helpers do not change control flow, coupling, or stack traversal
 - Favor typed relationships over dense generic connectivity
 - Prefer one representative point per architectural concept
@@ -361,7 +376,9 @@ Before finishing, verify:
 - Every link resolves to valid points
 - Every route in scope maps to at least one screen or container path in the graph
 - Every meaningful screen or container in scope has its major child views represented
+- Every major app flow in scope was traversed step-by-step through composition and orchestration layers rather than being collapsed into coarse jumps
 - Every screen flow that uses builder, factory, coordinator, or view-model orchestration includes those touchpoints unless there is clear evidence they are trivial pass-through wrappers
+- Dependency points were collapsed to stable entry surfaces where deeper dependency detail would not improve understanding of the core architecture
 - Loading, empty, error, retry, modal, and cross-domain navigation branches were checked and represented when architecturally meaningful
 - The graph is not overloaded with low-value nodes
 - `overview` nodes and edges still form a readable backbone
