@@ -45,7 +45,7 @@ Recommended template:
 - <important unresolved items>
 ```
 
-## 2) Decision Record format (`journal/<branch>/decisions.md`)
+## 2) Decision Record format (`.journal/<branch>/decisions.md`)
 
 Each decision should use this template:
 
@@ -65,7 +65,7 @@ Each decision should use this template:
 Numbering:
 - Use the next integer based on the last `DR-###` in the file.
 
-## 3) Observation Record format (`journal/<branch>/observations.md`)
+## 3) Observation Record format (`.journal/<branch>/observations.md`)
 
 Observations are for human-reported judgments, metrics, comparisons, regressions, or improvements.
 Do not create one unless the human actually supplied a meaningful observation.
@@ -84,7 +84,7 @@ Each observation should use this template:
 Numbering:
 - Use the next integer based on the last `OB-###` in the file.
 
-## 4) Session record format (`journal/<branch>/sessions/*`)
+## 4) Session record format (`.journal/<branch>/sessions/*`)
 
 Filename:
 `YYYY-MM-DD__<agent>.md`

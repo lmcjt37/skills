@@ -54,7 +54,7 @@ Recommended template:
 - DR-001, DR-002
 ```
 
-## 2) Decision Record format (`plan/<branch>/decisions.md`)
+## 2) Decision Record format (`.plan/<branch>/decisions.md`)
 
 Each decision should use this template:
 

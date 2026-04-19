@@ -33,8 +33,8 @@ Run this skill when:
 
 ## Files you manage (all at repo root)
 
-- `plan/<branch>/plan.md` (curated implementation plan)
-- `plan/<branch>/decisions.md` (Decision Records, DR-###)
+- `.plan/<branch>/plan.md` (curated implementation plan)
+- `.plan/<branch>/decisions.md` (Decision Records, DR-###)
 
 ## Workflow (do this every time)
 
@@ -45,11 +45,18 @@ Run this skill when:
 - Task reference: parse from user input, linked issue, document, or branch name when provided
 - Agent name: optional metadata; detect from system when easy, otherwise omit it
 
-### Step 2 — Ensure structure exists
+### Step 2 — Migrate legacy storage + ensure structure exists
 
-If missing, create:
-- `plan/<branch>/plan.md`
-- `plan/<branch>/decisions.md`
+Use `.plan/<branch>/` as the canonical storage location.
+
+Before creating anything new, detect legacy storage at `plan/<branch>/`:
+- If `plan/<branch>/` exists and `.plan/<branch>/` does not, move the full branch directory from `plan/<branch>/` to `.plan/<branch>/`.
+- If both locations exist, merge carefully and preserve existing files in `.plan/<branch>/`. Only copy missing legacy content across; do not overwrite newer hidden-folder content blindly.
+- If `plan/` becomes empty after migration, remove the empty legacy directories.
+
+If missing after migration, create:
+- `.plan/<branch>/plan.md`
+- `.plan/<branch>/decisions.md`
 
 ### Step 3 — Gather context
 
@@ -91,8 +98,8 @@ When the user asks to adjust scope/order:
 ### Step 6 — Write updates
 
 Write/update files in this order:
-1) `plan/<branch>/plan.md`
-2) `plan/<branch>/decisions.md`
+1) `.plan/<branch>/plan.md`
+2) `.plan/<branch>/decisions.md`
 
 ### Step 7 — Confirm succinctly
 

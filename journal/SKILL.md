@@ -33,10 +33,10 @@ Run this skill when:
 
 ## Files you manage (all at repo root)
 
-- `journal/<branch>/journal.md` (curated narrative)
-- `journal/<branch>/decisions.md` (Decision Records, DR-###)
-- `journal/<branch>/observations.md` (Observation Records, OB-###)
-- `journal/<branch>/sessions/YYYY-MM-DD__<agent>.md` (session record with optional transcript excerpts and tool-output highlights)
+- `.journal/<branch>/journal.md` (curated narrative)
+- `.journal/<branch>/decisions.md` (Decision Records, DR-###)
+- `.journal/<branch>/observations.md` (Observation Records, OB-###)
+- `.journal/<branch>/sessions/YYYY-MM-DD__<agent>.md` (session record with optional transcript excerpts and tool-output highlights)
 
 ## Workflow (do this every time)
 
@@ -47,13 +47,20 @@ Run this skill when:
 - Date: local date (YYYY-MM-DD)
 - Agent name: detect from system when easy; if unavailable use `[AGENT]`.
 
-### Step 2 — Ensure structure exists
+### Step 2 — Migrate legacy storage + ensure structure exists
 
-If missing, create:
-- `journal/<branch>/journal.md` (with the required sections your outline specifies)
-- `journal/<branch>/decisions.md`
-- `journal/<branch>/observations.md`
-- `journal/<branch>/sessions/`
+Use `.journal/<branch>/` as the canonical storage location.
+
+Before creating anything new, detect legacy storage at `journal/<branch>/`:
+- If `journal/<branch>/` exists and `.journal/<branch>/` does not, move the full branch directory from `journal/<branch>/` to `.journal/<branch>/`.
+- If both locations exist, merge carefully and preserve existing files in `.journal/<branch>/`. Only copy missing legacy content across; do not overwrite newer hidden-folder content blindly.
+- If `journal/` becomes empty after migration, remove the empty legacy directories.
+
+If missing after migration, create:
+- `.journal/<branch>/journal.md` (with the required sections your outline specifies)
+- `.journal/<branch>/decisions.md`
+- `.journal/<branch>/observations.md`
+- `.journal/<branch>/sessions/`
 
 ### Step 3 — Build the checkpoint payload
 
@@ -92,10 +99,10 @@ Update `journal.md` as a durable summary of the project state:
 
 Before writing, apply redaction rules from `references/guidelines.md`.
 Write/update files in this order:
-1) `journal/<branch>/sessions/...`
-2) `journal/<branch>/decisions.md`
-3) `journal/<branch>/observations.md`
-4) `journal/<branch>/journal.md`
+1) `.journal/<branch>/sessions/...`
+2) `.journal/<branch>/decisions.md`
+3) `.journal/<branch>/observations.md`
+4) `.journal/<branch>/journal.md`
 
 ### Step 5 — Confirm succinctly
 
